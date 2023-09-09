@@ -35,41 +35,10 @@ internal class Program
 
             ConsoleKey response;
 
-            Console.WriteLine("Pocket Updater Utility v" + version);
-            Console.WriteLine("Checking for updates...");
-
-            if(await CheckVersion(path)) {
-                string platform = GetPlatform();
-                ConsoleKey[] acceptedInputs = new[] { ConsoleKey.I, ConsoleKey.C, ConsoleKey.Q };
-                do {
-                    if (platform == "win") {
-                        Console.Write("Would you like to [i]nstall the update, [c]ontinue with the current version, or [q]uit? [i/c/q]: ");
-                    } else {
-                        Console.Write("Update downloaded. Would you like to [c]ontinue with the current version, or [q]uit? [c/q]: ");
-                    }
-                    response = Console.ReadKey(false).Key;
-                    Console.WriteLine();
-                } while(!acceptedInputs.Contains(response));
-
-                switch(response) {
-                    case ConsoleKey.I:
-                        int result = UpdateSelfAndRun(path, args);
-                        Environment.Exit(result);
-                        break;
-
-                    case ConsoleKey.C:
-                        break;
-
-                    case ConsoleKey.Q:
-                        Console.WriteLine("Come again soon");
-                        PauseExit();
-                        break;
-                }
-            }
-
             string verb = "menu";
             Dictionary<string, object?> data = new Dictionary<string, object?>();
-            Parser.Default.ParseArguments<MenuOptions, FundOptions, UpdateOptions,
+            var parser = new CommandLine.Parser(with => with.HelpWriter = null);
+            parser.ParseArguments<MenuOptions, FundOptions, UpdateOptions,
                 AssetsOptions, FirmwareOptions, ImagesOptions, InstancegeneratorOptions>(args)
                 .WithParsed<FundOptions>(async o =>
                 {
@@ -152,16 +121,41 @@ internal class Program
                 )
                 .WithNotParsed(o =>
                 {
-                    if(o.IsHelp()) {
-                        Environment.Exit(1);
-                    }
-                    if(o.IsVersion()) {
-                        Environment.Exit(1);
-                    }
+
                 }
                 );
 
-            //path = "/Users/mattpannella/pocket-test";
+            Console.WriteLine("Pocket Updater Utility v" + version);
+            Console.WriteLine("Checking for updates...");
+
+            if(await CheckVersion(path)) {
+                string platform = GetPlatform();
+                ConsoleKey[] acceptedInputs = new[] { ConsoleKey.I, ConsoleKey.C, ConsoleKey.Q };
+                do {
+                    if (platform == "win") {
+                        Console.Write("Would you like to [i]nstall the update, [c]ontinue with the current version, or [q]uit? [i/c/q]: ");
+                    } else {
+                        Console.Write("Update downloaded. Would you like to [c]ontinue with the current version, or [q]uit? [c/q]: ");
+                    }
+                    response = Console.ReadKey(false).Key;
+                    Console.WriteLine();
+                } while(!acceptedInputs.Contains(response));
+
+                switch(response) {
+                    case ConsoleKey.I:
+                        int result = UpdateSelfAndRun(path, args);
+                        Environment.Exit(result);
+                        break;
+
+                    case ConsoleKey.C:
+                        break;
+
+                    case ConsoleKey.Q:
+                        Console.WriteLine("Come again soon");
+                        PauseExit();
+                        break;
+                }
+            }
 
             updater = new PocketCoreUpdater(path);
             settings = new SettingsManager(path);
@@ -1001,6 +995,16 @@ internal class Program
                 _ => null
             };
         }
+    }
+
+    static void DisplayHelp<T>(ParserResult<T> result, IEnumerable<Error> errs)
+    {
+        var helpText = HelpText.AutoBuild(result, h =>
+        {
+            h.AddPreOptionsLine("text");
+            return h;
+        }, e => e);
+        Console.WriteLine(helpText);
     }
 
     private static string[] menuItems = {
