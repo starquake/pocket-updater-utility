@@ -37,10 +37,11 @@ internal class Program
 
             string verb = "menu";
             Dictionary<string, object?> data = new Dictionary<string, object?>();
-            var parser = new CommandLine.Parser(with => with.HelpWriter = null);
-            parser.ParseArguments<MenuOptions, FundOptions, UpdateOptions,
-                AssetsOptions, FirmwareOptions, ImagesOptions, InstancegeneratorOptions>(args)
-                .WithParsed<FundOptions>(async o =>
+            var parser = Parser.Default;
+            var parserResult = parser.ParseArguments<MenuOptions, FundOptions, UpdateOptions,
+                AssetsOptions, FirmwareOptions, ImagesOptions, InstancegeneratorOptions>(args);
+            parserResult
+                .WithParsed<FundOptions>(o =>
                 {
                     verb = "fund";
                     data.Add("core", null);
@@ -49,7 +50,7 @@ internal class Program
                     }
                 }
                 )
-                .WithParsed<UpdateOptions>(async o =>
+                .WithParsed<UpdateOptions>(o =>
                 {
                     verb = "update";
                     cliMode = true;
@@ -65,7 +66,7 @@ internal class Program
                     }
                 }
                 )
-                .WithParsed<AssetsOptions>(async o =>
+                .WithParsed<AssetsOptions>(o =>
                 {
                     verb = "assets";
                     cliMode = true;
@@ -78,7 +79,7 @@ internal class Program
                     }
                 }
                 )
-                .WithParsed<FirmwareOptions>(async o =>
+                .WithParsed<FirmwareOptions>(o =>
                 {
                     verb = "firmware";
                     cliMode = true;
@@ -88,7 +89,7 @@ internal class Program
                     }
                 }
                 )
-                .WithParsed<ImagesOptions>(async o =>
+                .WithParsed<ImagesOptions>(o =>
                 {
                     verb = "images";
                     cliMode = true;
@@ -102,7 +103,7 @@ internal class Program
                     }
                 }
                 )
-                .WithParsed<InstancegeneratorOptions>(async o =>
+                .WithParsed<InstancegeneratorOptions>(o =>
                 {
                     verb = "instancegenerator";
                     forceInstanceGenerator = true;
@@ -119,11 +120,17 @@ internal class Program
                     }
                 }
                 )
-                .WithNotParsed(o =>
-                {
-
-                }
-                );
+                    .WithNotParsed(o =>
+                    {
+                        if(o.IsHelp()) {
+                        // DisplayHelp(parserResult, o);
+                            Environment.Exit(1);
+                        }
+                        if(o.IsVersion()) {
+                            Environment.Exit(1);
+                        }
+                    }
+                    );
 
             Console.WriteLine("Pocket Updater Utility v" + version);
             Console.WriteLine("Checking for updates...");
@@ -997,15 +1004,15 @@ internal class Program
         }
     }
 
-    static void DisplayHelp<T>(ParserResult<T> result, IEnumerable<Error> errs)
+    /*static void DisplayHelp<T>(ParserResult<T> result, IEnumerable<Error> errs)
     {
-        var helpText = HelpText.AutoBuild(result, h =>
+        var helpText = CommandLine.Text.HelpText.AutoBuild(result, h =>
         {
-            h.AddPreOptionsLine("text");
+            h.AddPreOptionsLine("some text");
             return h;
         }, e => e);
         Console.WriteLine(helpText);
-    }
+    }*/
 
     private static string[] menuItems = {
         "Update All",
